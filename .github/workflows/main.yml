@@ -23,55 +23,18 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate fixed keystore
-        run: |
-          keytool -genkeypair \
-            -alias ${{ secrets.KEY_ALIAS }} \
-            -keypass ${{ secrets.KEY_PASSWORD }} \
-            -keystore arrowescape.jks \
-            -storepass ${{ secrets.STORE_PASSWORD }} \
-            -dname "CN=Dev Prajapati, OU=GEC, O=ArrowEscape, L=Gandhinagar, S=Gujarat, C=IN" \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000
-
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.6 --distribution-type bin
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build Release APK
-        run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/arrowescape.jks \
-            -Pandroid.injected.signing.store.password=${{ secrets.STORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }} \
-            --no-daemon
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
-      - name: Rename APK
-        run: |
-          mkdir -p output
-          cp app/build/outputs/apk/release/app-release.apk output/ArrowEscape.apk
-
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArrowEscape
-          path: output/ArrowEscape.apk
+          name: ArrowEscape-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        with:
-          tag_name: v2.0.${{ github.run_number }}
-          name: Arrow Escape v2.0.${{ github.run_number }}
-          files: output/ArrowEscape.apk
-          body: |
-            ## Arrow Escape - Latest Build
-            Download **ArrowEscape.apk** and install on your phone.
-            This is a signed release APK - updates will install smoothly!
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
