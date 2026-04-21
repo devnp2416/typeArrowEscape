@@ -23,18 +23,50 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Generate fixed keystore
+        run: |
+          keytool -genkeypair \
+            -alias arrowescape \
+            -keypass arrowescape123 \
+            -keystore arrowescape.jks \
+            -storepass arrowescape123 \
+            -dname "CN=Dev, OU=GEC, O=ArrowEscape, L=Gandhinagar, S=Gujarat, C=IN" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storetype JKS
+
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.6 --distribution-type bin
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Build Release APK
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/arrowescape.jks \
+            -Pandroid.injected.signing.store.password=arrowescape123 \
+            -Pandroid.injected.signing.key.alias=arrowescape \
+            -Pandroid.injected.signing.key.password=arrowescape123 \
+            --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: ArrowEscape-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: ArrowEscape
+          path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v2.0.${{ github.run_number }}
+          name: Arrow Escape v2.0.${{ github.run_number }}
+          files: app/build/outputs/apk/release/app-release.apk
+          body: |
+            Download app-release.apk and install on your phone.
+            Same signing key every build - updates work without uninstalling!
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
