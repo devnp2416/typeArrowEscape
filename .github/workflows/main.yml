@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -51,7 +54,7 @@ jobs:
             -Pandroid.injected.signing.key.password=arrowescape123 \
             --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ArrowEscape
@@ -60,13 +63,12 @@ jobs:
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v2.0.${{ github.run_number }}
           name: Arrow Escape v2.0.${{ github.run_number }}
           files: app/build/outputs/apk/release/app-release.apk
           body: |
             Download app-release.apk and install on your phone.
-            Same signing key every build - updates work without uninstalling!
+            Same signing key - updates install without uninstalling!
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
