@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -325,10 +325,24 @@ function toggleTheme(){
   sv('theme',next);
 }
 function applyTheme(){
-  var t=ld('theme','dark');
+  var saved=ld('theme',null);
+  var t;
+  if(saved){
+    t=saved;
+  } else {
+    t=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+  }
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('themeToggle').textContent=t==='dark'?'☀️':'🌙';
 }
+// Auto-follow system theme if user hasn't manually picked one
+window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){
+  if(!ld('theme',null)){
+    var t=e.matches?'dark':'light';
+    document.documentElement.setAttribute('data-theme',t);
+    document.getElementById('themeToggle').textContent=t==='dark'?'☀️':'🌙';
+  }
+});
 applyTheme();
 
 var LEVELS=[
